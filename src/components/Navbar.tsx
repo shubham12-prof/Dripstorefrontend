@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { ShoppingBag, Menu, X } from "lucide-react";
 import { useState } from "react";
-
+import { useCart } from "../context/CartContext";
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-
+  const { cartItems } = useCart();
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
       <Link to="/" className="text-2xl font-black tracking-widest text-black">
@@ -36,7 +37,7 @@ const Navbar = () => {
         <Link to="/cart" className="relative">
           <ShoppingBag size={22} className="text-black" />
           <span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            0
+            {totalItems}
           </span>
         </Link>
 

@@ -17,7 +17,7 @@ const ProductDetail = () => {
   const [aiSuggestion, setAiSuggestion] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const [cooldown, setCooldown] = useState(false);
   if (!product) {
     return (
       <div className="text-center mt-20 text-gray-400">
@@ -46,7 +46,8 @@ const ProductDetail = () => {
   const handleAiSuggest = async () => {
     setAiLoading(true);
     setAiSuggestion("");
-
+    setCooldown(true);
+    setTimeout(() => setCooldown(false), 10000);
     const prompt = `I am wearing a ${product.name}. It is a ${product.category} clothing item with tags: ${product.tags.join(", ")}. Suggest 3 complete outfit combinations that go well with this. Keep it short, stylish and practical.`;
 
     try {
@@ -161,7 +162,11 @@ const ProductDetail = () => {
               disabled={aiLoading}
               className="w-full bg-purple-600 text-white py-3 text-sm font-bold uppercase tracking-widest hover:bg-purple-700 transition disabled:opacity-50"
             >
-              {aiLoading ? "Styling you..." : "✨ Get Outfit Suggestion"}
+              {aiLoading
+                ? "Styling you..."
+                : cooldown
+                  ? "Please wait 10s..."
+                  : "✨ Get Outfit Suggestion"}
             </button>
 
             {aiSuggestion && (
