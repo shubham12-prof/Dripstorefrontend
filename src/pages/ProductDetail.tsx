@@ -1,23 +1,44 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { products } from "../data/products";
-import { useCart } from "../context/CartContext";
-import type { Size } from "../types";
+import { useState, useEffect } from "react";
+import { getProductByIdApi, addToCartApi } from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import type { Product, Size } from "../types";
 import { Sparkles, ShoppingBag, ArrowLeft } from "lucide-react";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { isAuthenticated, refreshCartCount } = useAuth();
 
-  const product = products.find((p) => p.id === Number(id));
-
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<Size | null>(null);
   const [added, setAdded] = useState(false);
+  const [error, setError] = useState("");
   const [aiSuggestion, setAiSuggestion] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [cooldown, setCooldown] = useState(false);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const res = await getProductByIdApi(Number(id));
+        setProduct(res.data);
+      } catch (error) {
+        console.error("Failed to fetch product", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="text-center mt-20 text-gray-400">Loading product...</div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="text-center mt-20 text-gray-400">
@@ -32,22 +53,30 @@ const ProductDetail = () => {
     );
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!selectedSize) {
       setError("Please select a size first!");
       return;
     }
-    addToCart(product, selectedSize);
-    setAdded(true);
-    setError("");
-    setTimeout(() => setAdded(false), 2000);
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    try {
+      await addToCartApi(product.id, selectedSize, 1);
+      setAdded(true);
+      setError("");
+      await refreshCartCount();
+      setTimeout(() => setAdded(false), 2000);
+    } catch (error) {
+      setError("Failed to add to cart. Try again!");
+    }
   };
 
   const handleAiSuggest = async () => {
     setAiLoading(true);
     setAiSuggestion("");
-    setCooldown(true);
-    setTimeout(() => setCooldown(false), 10000);
+
     const prompt = `I am wearing a ${product.name}. It is a ${product.category} clothing item with tags: ${product.tags.join(", ")}. Suggest 3 complete outfit combinations that go well with this. Keep it short, stylish and practical.`;
 
     try {
@@ -124,7 +153,7 @@ const ProductDetail = () => {
               {product.sizes.map((size) => (
                 <button
                   key={size}
-                  onClick={() => setSelectedSize(size)}
+                  onClick={() => setSelectedSize(size as Size)}
                   className={`w-12 h-12 text-sm font-bold border transition
                     ${
                       selectedSize === size
@@ -144,7 +173,11 @@ const ProductDetail = () => {
             className="flex items-center justify-center gap-2 bg-black text-white py-4 font-bold uppercase tracking-widest hover:bg-gray-800 transition"
           >
             <ShoppingBag size={18} />
-            {added ? "Added to Cart! ✓" : "Add to Cart"}
+            {added
+              ? "Added to Cart! ✓"
+              : isAuthenticated
+                ? "Add to Cart"
+                : "Login to Add to Cart"}
           </button>
 
           <div className="border border-gray-200 rounded-2xl p-6">
@@ -162,11 +195,7 @@ const ProductDetail = () => {
               disabled={aiLoading}
               className="w-full bg-purple-600 text-white py-3 text-sm font-bold uppercase tracking-widest hover:bg-purple-700 transition disabled:opacity-50"
             >
-              {aiLoading
-                ? "Styling you..."
-                : cooldown
-                  ? "Please wait 10s..."
-                  : "✨ Get Outfit Suggestion"}
+              {aiLoading ? "Styling you..." : "✨ Get Outfit Suggestion"}
             </button>
 
             {aiSuggestion && (

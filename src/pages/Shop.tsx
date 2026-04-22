@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { products } from "../data/products";
-import type { Category } from "../types";
+import { useState, useEffect } from "react";
+import { getProductsApi } from "../services/api";
+import type { Product, Category } from "../types";
 
 const categories: { label: string; value: Category | "all" }[] = [
   { label: "All", value: "all" },
@@ -14,10 +15,25 @@ const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category") || "all";
 
-  const filteredProducts =
-    selectedCategory === "all"
-      ? products
-      : products.filter((p) => p.category === selectedCategory);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const res = await getProductsApi(
+          selectedCategory === "all" ? undefined : selectedCategory,
+        );
+        setProducts(res.data);
+      } catch (error) {
+        console.error("Failed to fetch products", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [selectedCategory]);
 
   return (
     <div className="min-h-screen bg-white px-6 py-12">
@@ -46,11 +62,15 @@ const Shop = () => {
         ))}
       </div>
 
-      {filteredProducts.length === 0 ? (
+      {loading ? (
+        <div className="text-center text-gray-400 mt-20">
+          Loading products...
+        </div>
+      ) : products.length === 0 ? (
         <p className="text-center text-gray-400 mt-20">No products found.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {filteredProducts.map((product) => (
+          {products.map((product) => (
             <div
               key={product.id}
               className="cursor-pointer group"

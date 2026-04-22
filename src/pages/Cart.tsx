@@ -1,15 +1,77 @@
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext";
+import { useState, useEffect } from "react";
+import { getCartApi, removeFromCartApi, clearCartApi } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import { Trash2, ShoppingBag } from "lucide-react";
+
+interface CartItemFromApi {
+  id: string;
+  size: string;
+  quantity: number;
+  product: {
+    id: number;
+    name: string;
+    price: number;
+    image: string;
+    category: string;
+  };
+}
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { cartItems, removeFromCart, clearCart } = useCart();
+  const { isAuthenticated } = useAuth();
+
+  const [cartItems, setCartItems] = useState<CartItemFromApi[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    fetchCart();
+  }, [isAuthenticated]);
+
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      const res = await getCartApi();
+      setCartItems(res.data);
+    } catch (error) {
+      console.error("Failed to fetch cart", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    try {
+      await removeFromCartApi(id);
+      setCartItems((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error("Failed to remove item", error);
+    }
+  };
+
+  const handleClearCart = async () => {
+    try {
+      await clearCartApi();
+      setCartItems([]);
+    } catch (error) {
+      console.error("Failed to clear cart", error);
+    }
+  };
 
   const total = cartItems.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0,
   );
+
+  if (loading) {
+    return (
+      <div className="text-center mt-20 text-gray-400">Loading cart...</div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -36,7 +98,7 @@ const Cart = () => {
       <div className="flex items-center justify-between mb-10">
         <h1 className="text-3xl font-black tracking-tight">Your Cart</h1>
         <button
-          onClick={clearCart}
+          onClick={handleClearCart}
           className="text-xs text-gray-400 uppercase tracking-widest hover:text-red-500 transition"
         >
           Clear All
@@ -46,7 +108,7 @@ const Cart = () => {
       <div className="flex flex-col gap-6">
         {cartItems.map((item) => (
           <div
-            key={`${item.product.id}-${item.size}`}
+            key={item.id}
             className="flex gap-6 items-center border-b border-gray-100 pb-6"
           >
             <img
@@ -68,7 +130,7 @@ const Cart = () => {
             </div>
 
             <button
-              onClick={() => removeFromCart(item.product.id, item.size)}
+              onClick={() => handleRemove(item.id)}
               className="text-gray-300 hover:text-red-500 transition"
             >
               <Trash2 size={18} />

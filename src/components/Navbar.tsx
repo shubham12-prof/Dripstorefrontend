@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { ShoppingBag, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { cartItems } = useCart();
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const { isAuthenticated, logout, user, cartCount } = useAuth();
+
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
       <Link to="/" className="text-2xl font-black tracking-widest text-black">
@@ -34,11 +35,32 @@ const Navbar = () => {
       </div>
 
       <div className="flex items-center gap-4">
+        {isAuthenticated ? (
+          <div className="hidden md:flex items-center gap-4">
+            <span className="text-sm text-gray-500">Hi, {user?.name}</span>
+            <button
+              onClick={logout}
+              className="text-sm font-bold text-gray-600 hover:text-black transition"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <Link
+            to="/login"
+            className="hidden md:block text-sm font-bold text-gray-600 hover:text-black transition"
+          >
+            Login
+          </Link>
+        )}
+
         <Link to="/cart" className="relative">
           <ShoppingBag size={22} className="text-black" />
-          <span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            {totalItems}
-          </span>
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+              {cartCount}
+            </span>
+          )}
         </Link>
 
         <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
@@ -66,6 +88,15 @@ const Navbar = () => {
           >
             Accessories
           </Link>
+          {isAuthenticated ? (
+            <button onClick={logout} className="text-left">
+              Logout
+            </button>
+          ) : (
+            <Link to="/login" onClick={() => setMenuOpen(false)}>
+              Login
+            </Link>
+          )}
         </div>
       )}
     </nav>
