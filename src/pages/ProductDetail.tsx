@@ -74,14 +74,17 @@ const ProductDetail = () => {
   };
 
   const handleAiSuggest = async () => {
+    if (aiLoading) return;
+
     setAiLoading(true);
     setAiSuggestion("");
 
-    const prompt = `I am wearing a ${product.name}. It is a ${product.category} clothing item with tags: ${product.tags.join(", ")}. Suggest 3 complete outfit combinations that go well with this. Keep it short, stylish and practical.`;
+    const prompt = `I am wearing a ${product.name}. It is a ${product.category} clothing item with tags: ${product.tags.join(", ")}. Suggest 3 complete outfit combinations. Keep it short and stylish.`;
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        // Change this line:
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -90,11 +93,27 @@ const ProductDetail = () => {
           }),
         },
       );
+
       const data = await response.json();
+
+      if (response.status === 429) {
+        setAiSuggestion(
+          "The AI is a bit busy right now. Please wait a minute before trying again.",
+        );
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || "API Error");
+      }
+
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       setAiSuggestion(text || "No suggestion received. Try again!");
     } catch (err) {
-      setAiSuggestion("Something went wrong. Please try again.");
+      console.error("AI Error:", err);
+      setAiSuggestion(
+        "Something went wrong. Check your connection and try again.",
+      );
     } finally {
       setAiLoading(false);
     }
