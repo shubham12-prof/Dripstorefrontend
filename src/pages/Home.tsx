@@ -3,7 +3,12 @@ import { products } from "../data/products";
 
 const Home = () => {
   const navigate = useNavigate();
-
+  const MARQUEE_ITEMS = [
+    "Free shipping over ₹999",
+    "New arrivals weekly",
+    "Easy returns",
+    "Exclusive drops",
+  ];
   return (
     <div className="min-h-screen bg-white">
       <section className="bg-black text-white px-6 py-24 flex flex-col items-center text-center gap-6">
@@ -24,7 +29,23 @@ const Home = () => {
           Shop Now
         </button>
       </section>
-
+      <div className="bg-[#FF3B2F] overflow-hidden whitespace-nowrap py-2.5">
+        {" "}
+        <div className="inline-block animate-[marquee_18s_linear_infinite]">
+          {" "}
+          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map(
+            (item, i) => (
+              <span
+                key={i}
+                className="text-[11px] font-bold tracking-[3px] uppercase text-white px-8 before:content-['★'] before:mr-4 before:text-[8px]"
+              >
+                {" "}
+                {item}{" "}
+              </span>
+            ),
+          )}
+        </div>
+      </div>
       <section className="px-6 py-16">
         <h2 className="text-2xl font-black text-center mb-10 tracking-tight">
           Shop by Category
@@ -51,7 +72,6 @@ const Home = () => {
           ))}
         </div>
       </section>
-
       <section className="px-6 py-16 bg-gray-50">
         <h2 className="text-2xl font-black text-center mb-10 tracking-tight">
           Featured Products
